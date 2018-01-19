@@ -66,21 +66,19 @@ pub fn jaro(a: &str, b: &str) -> f64 {
         // prevent integer wrapping
         let min_bound = if i > search_range { i - search_range } else { 0 };
         let max_bound = i + search_range;
-        for (j, _) in b.chars().enumerate()
-                               .skip(min_bound)
-                               .take(max_bound-min_bound+1)
-                               .filter(|&(_,c)| c == a_char) {
-            if !b_consumed[j] {
-                b_consumed[j] = true;
-                matches += 1;
+        let result = b.chars().enumerate()
+                              .skip(min_bound)
+                              .take(max_bound-min_bound+1)
+                              .filter(|&(j,c)| c == a_char && !b_consumed[j])
+                              .next();
+        if let Some((j, _)) = result {
+            b_consumed[j] = true;
+            matches += 1;
 
-                if j < b_match_index {
-                    transpositions += 1;
-                }
-                b_match_index = j;
-
-                break;
+            if j < b_match_index {
+                transpositions += 1;
             }
+            b_match_index = j;
         }
     }
 
