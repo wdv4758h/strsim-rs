@@ -67,9 +67,8 @@ pub fn jaro(a: &str, b: &str) -> f64 {
         let min_bound = if i > search_range { i - search_range } else { 0 };
         let max_bound = i + search_range;
         let result = b.chars().enumerate()
-                              .skip(min_bound)
-                              .take(max_bound-min_bound+1)
-                              .filter(|&(j,c)| c == a_char && !b_consumed[j])
+                              .filter(|&(j, c)| min_bound <= j && j <= max_bound &&
+                                                c == a_char && !b_consumed[j])
                               .next();
         if let Some((j, _)) = result {
             b_consumed[j] = true;
