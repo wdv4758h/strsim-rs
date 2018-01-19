@@ -56,38 +56,26 @@ pub fn jaro(a: &str, b: &str) -> f64 {
 
     let search_range = (max(a_len, b_len) / 2) - 1;
 
-    let mut b_consumed = Vec::with_capacity(b_len);
-    for _ in 0..b_len {
-        b_consumed.push(false);
-    }
-    let mut matches = 0.0;
+    let mut b_consumed = vec![false; b_len];
+    let mut matches = 0;
 
-    let mut transpositions = 0.0;
+    let mut transpositions = 0;
     let mut b_match_index = 0;
 
     for (i, a_char) in a.chars().enumerate() {
-        let min_bound =
-            // prevent integer wrapping
-            if i > search_range {
-                max(0, i - search_range)
-            } else {
-                0
-            };
-
-        let max_bound = min(b_len - 1, i + search_range);
-
-        if min_bound > max_bound {
-            continue;
-        }
-
-        for (j, b_char) in b.chars().enumerate() {
-            if min_bound <= j && j <= max_bound && a_char == b_char &&
-               !b_consumed[j] {
+        // prevent integer wrapping
+        let min_bound = if i > search_range { i - search_range } else { 0 };
+        let max_bound = i + search_range;
+        for (j, _) in b.chars().enumerate()
+                               .skip(min_bound)
+                               .take(max_bound-min_bound+1)
+                               .filter(|&(_,c)| c == a_char) {
+            if !b_consumed[j] {
                 b_consumed[j] = true;
-                matches += 1.0;
+                matches += 1;
 
                 if j < b_match_index {
-                    transpositions += 1.0;
+                    transpositions += 1;
                 }
                 b_match_index = j;
 
@@ -96,12 +84,16 @@ pub fn jaro(a: &str, b: &str) -> f64 {
         }
     }
 
-    if matches == 0.0 {
+    if matches == 0 {
         0.0
     } else {
-        (1.0 / 3.0) * ((matches / a_len as f64) +
-                       (matches / b_len as f64) +
-                       ((matches - transpositions) / matches))
+        let matches = matches as f64;
+        let transpositions = transpositions as f64;
+        let a_len = a_len as f64;
+        let b_len = b_len as f64;
+        ((matches / a_len) +
+         (matches / b_len) +
+         ((matches - transpositions) / matches)) / 3.0
     }
 }
 
