@@ -1,4 +1,8 @@
 //! This library implements string similarity metrics.
+#![feature(test)]
+
+extern crate test;
+
 
 use std::char;
 use std::cmp::{max, min};
@@ -298,6 +302,7 @@ pub fn damerau_levenshtein(a: &str, b: &str) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::test::Bencher;
 
     #[test]
     fn hamming_empty() {
@@ -695,4 +700,411 @@ mod tests {
     fn damerau_levenshtein_unrestricted_edit() {
         assert_eq!(3, damerau_levenshtein("a cat", "an abct"));
     }
+
+    ///////////
+
+    // #[bench]
+    // fn hamming_empty() {
+    //     match hamming("", "") {
+    //         Ok(distance) => { assert_eq!(0, distance); },
+    //         Err(why) => { panic!("{:?}", why); }
+    //     }
+    // }
+
+    // #[bench]
+    // fn hamming_same() {
+    //     match hamming("hamming", "hamming") {
+    //         Ok(distance) => { assert_eq!(0, distance); },
+    //         Err(why) => { panic!("{:?}", why); }
+    //     }
+    // }
+
+    // #[bench]
+    // fn hamming_diff() {
+    //     match hamming("hamming", "hammers") {
+    //         Ok(distance) => { assert_eq!(3, distance); },
+    //         Err(why) => { panic!("{:?}", why); }
+    //     }
+    // }
+
+    // #[bench]
+    // fn hamming_diff_multibyte() {
+    //     match hamming("hamming", "h香mmüng") {
+    //         Ok(distance) => { assert_eq!(2, distance); },
+    //         Err(why) => { panic!("{:?}", why); }
+    //     }
+    // }
+
+    // #[bench]
+    // fn hamming_unequal_length() {
+    //     match hamming("ham", "hamming") {
+    //         Ok(_) => { panic!(); },
+    //         Err(why) => { assert_eq!(why, StrSimError::DifferentLengthArgs); }
+    //     }
+    // }
+
+    // #[bench]
+    // fn hamming_names() {
+    //     match hamming("Friedrich Nietzs", "Jean-Paul Sartre") {
+    //         Ok(distance) => { assert_eq!(14, distance); },
+    //         Err(why) => { panic!("{:?}", why); }
+    //     }
+    // }
+
+    #[bench]
+    fn bench_jaro_both_empty(b: &mut Bencher) {
+       b.iter(|| 1.0 == jaro("", ""));
+    }
+
+    #[bench]
+    fn bench_jaro_first_empty(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro("", "jaro"));
+    }
+
+    #[bench]
+    fn bench_jaro_second_empty(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro("distance", ""));
+    }
+
+    #[bench]
+    fn bench_jaro_same(b: &mut Bencher) {
+        b.iter(|| 1.0 == jaro("jaro", "jaro"));
+    }
+
+    #[bench]
+    fn bench_jaro_multibyte(b: &mut Bencher) {
+        b.iter(|| {
+            (0.818 - jaro("testabctest", "testöঙ香test")) < 0.001;
+            (0.818 - jaro("testöঙ香test", "testabctest")) < 0.001;
+        });
+    }
+
+    #[bench]
+    fn bench_jaro_diff_short(b: &mut Bencher) {
+        b.iter(|| (0.767 - jaro("dixon", "dicksonx")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_diff_one_character(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro("a", "b"));
+    }
+
+    #[bench]
+    fn bench_jaro_diff_one_and_two(b: &mut Bencher) {
+        b.iter(|| (0.83 - jaro("a", "ab")).abs() < 0.01);
+    }
+
+    #[bench]
+    fn bench_jaro_diff_two_and_one(b: &mut Bencher) {
+        b.iter(|| (0.83 - jaro("ab", "a")).abs() < 0.01);
+    }
+
+    #[bench]
+    fn bench_jaro_diff_no_transposition(b: &mut Bencher) {
+        b.iter(|| (0.822 - jaro("dwayne", "duane")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_diff_with_transposition(b: &mut Bencher) {
+        b.iter(|| (0.944 - jaro("martha", "marhta")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_names(b: &mut Bencher) {
+        b.iter(|| (0.392 - jaro("Friedrich Nietzsche",
+                              "Jean-Paul Sartre")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_both_empty(b: &mut Bencher) {
+        b.iter(|| 1.0 == jaro_winkler("", ""));
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_first_empty(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro_winkler("", "jaro-winkler"));
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_second_empty(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro_winkler("distance", ""));
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_same(b: &mut Bencher) {
+        b.iter(|| 1.0 == jaro_winkler("Jaro-Winkler", "Jaro-Winkler"));
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_multibyte(b: &mut Bencher) {
+        b.iter(|| {
+            (0.89 - jaro_winkler("testabctest", "testöঙ香test")).abs() <
+                0.001;
+        (0.89 - jaro_winkler("testöঙ香test", "testabctest")).abs() <
+                0.001;
+        });
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_diff_short(b: &mut Bencher) {
+        b.iter(|| {
+            (0.813 - jaro_winkler("dixon", "dicksonx")).abs() < 0.001;
+            (0.813 - jaro_winkler("dicksonx", "dixon")).abs() < 0.001;
+        });
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_diff_one_character(b: &mut Bencher) {
+        b.iter(|| 0.0 == jaro_winkler("a", "b"));
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_diff_no_transposition(b: &mut Bencher) {
+        b.iter(|| (0.840 - jaro_winkler("dwayne", "duane")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_diff_with_transposition(b: &mut Bencher) {
+        b.iter(|| (0.961 - jaro_winkler("martha", "marhta")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_names(b: &mut Bencher) {
+        b.iter(|| (0.562 - jaro_winkler("Friedrich Nietzsche",
+                                      "Fran-Paul Sartre")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_long_prefix(b: &mut Bencher) {
+        b.iter(|| (0.911 - jaro_winkler("cheeseburger", "cheese fries")).abs() <
+                0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_more_names(b: &mut Bencher) {
+        b.iter(|| (0.868 - jaro_winkler("Thorkel", "Thorgier")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_length_of_one(b: &mut Bencher) {
+        b.iter(|| (0.738 - jaro_winkler("Dinsdale", "D")).abs() < 0.001);
+    }
+
+    #[bench]
+    fn bench_jaro_winkler_very_long_prefix(b: &mut Bencher) {
+        b.iter(|| {
+            (1.0 - jaro_winkler("thequickbrownfoxjumpedoverx",
+                                "thequickbrownfoxjumpedovery")).abs() <
+                    0.001;
+        });
+    }
+
+    // #[bench]
+    // fn levenshtein_empty() {
+    //     assert_eq!(0, levenshtein("", ""));
+    // }
+
+    // #[bench]
+    // fn levenshtein_same() {
+    //     assert_eq!(0, levenshtein("levenshtein", "levenshtein"));
+    // }
+
+    // #[bench]
+    // fn levenshtein_diff_short() {
+    //     assert_eq!(3, levenshtein("kitten", "sitting"));
+    // }
+
+    // #[bench]
+    // fn levenshtein_diff_with_space() {
+    //     assert_eq!(5, levenshtein("hello, world", "bye, world"));
+    // }
+
+    // #[bench]
+    // fn levenshtein_diff_multibyte() {
+    //     assert_eq!(3, levenshtein("öঙ香", "abc"));
+    //     assert_eq!(3, levenshtein("abc", "öঙ香"));
+    // }
+
+    // #[bench]
+    // fn levenshtein_diff_longer() {
+    //     let a = "The quick brown fox jumped over the angry dog.";
+    //     let b = "Lorem ipsum dolor sit amet, dicta latine an eam.";
+    //     assert_eq!(37, levenshtein(a, b));
+    // }
+
+    // #[bench]
+    // fn levenshtein_first_empty() {
+    //     assert_eq!(7, levenshtein("", "sitting"));
+    // }
+
+    // #[bench]
+    // fn levenshtein_second_empty() {
+    //     assert_eq!(6, levenshtein("kitten", ""));
+    // }
+
+    // #[bench]
+    // fn osa_distance_empty() {
+    //     assert_eq!(0, osa_distance("", ""));
+    // }
+
+    // #[bench]
+    // fn osa_distance_same() {
+    //     assert_eq!(0, osa_distance("damerau", "damerau"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_first_empty() {
+    //     assert_eq!(7, osa_distance("", "damerau"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_second_empty() {
+    //     assert_eq!(7, osa_distance("damerau", ""));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff() {
+    //     assert_eq!(3, osa_distance("ca", "abc"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_short() {
+    //     assert_eq!(3, osa_distance("damerau", "aderua"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_reversed() {
+    //     assert_eq!(3, osa_distance("aderua", "damerau"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_multibyte() {
+    //     assert_eq!(3, osa_distance("öঙ香", "abc"));
+    //     assert_eq!(3, osa_distance("abc", "öঙ香"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_unequal_length() {
+    //     assert_eq!(6, osa_distance("damerau", "aderuaxyz"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_unequal_length_reversed() {
+    //     assert_eq!(6, osa_distance("aderuaxyz", "damerau"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_comedians() {
+    //     assert_eq!(5, osa_distance("Stewart", "Colbert"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_many_transpositions() {
+    //     assert_eq!(4, osa_distance("abcdefghijkl", "bacedfgihjlk"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_diff_longer() {
+    //     let a = "The quick brown fox jumped over the angry dog.";
+    //     let b = "Lehem ipsum dolor sit amet, dicta latine an eam.";
+    //     assert_eq!(36, osa_distance(a, b));
+    // }
+
+    // #[bench]
+    // fn osa_distance_beginning_transposition() {
+    //     assert_eq!(1, osa_distance("foobar", "ofobar"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_end_transposition() {
+    //     assert_eq!(1, osa_distance("specter", "spectre"));
+    // }
+
+    // #[bench]
+    // fn osa_distance_restricted_edit() {
+    //     assert_eq!(4, osa_distance("a cat", "an abct"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_empty() {
+    //     assert_eq!(0, damerau_levenshtein("", ""));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_same() {
+    //     assert_eq!(0, damerau_levenshtein("damerau", "damerau"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_first_empty() {
+    //     assert_eq!(7, damerau_levenshtein("", "damerau"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_second_empty() {
+    //     assert_eq!(7, damerau_levenshtein("damerau", ""));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff() {
+    //     assert_eq!(2, damerau_levenshtein("ca", "abc"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_short() {
+    //     assert_eq!(3, damerau_levenshtein("damerau", "aderua"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_reversed() {
+    //     assert_eq!(3, damerau_levenshtein("aderua", "damerau"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_multibyte() {
+    //     assert_eq!(3, damerau_levenshtein("öঙ香", "abc"));
+    //     assert_eq!(3, damerau_levenshtein("abc", "öঙ香"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_unequal_length() {
+    //     assert_eq!(6, damerau_levenshtein("damerau", "aderuaxyz"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_unequal_length_reversed() {
+    //     assert_eq!(6, damerau_levenshtein("aderuaxyz", "damerau"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_comedians() {
+    //     assert_eq!(5, damerau_levenshtein("Stewart", "Colbert"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_many_transpositions() {
+    //     assert_eq!(4, damerau_levenshtein("abcdefghijkl", "bacedfgihjlk"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_diff_longer() {
+    //     let a = "The quick brown fox jumped over the angry dog.";
+    //     let b = "Lehem ipsum dolor sit amet, dicta latine an eam.";
+    //     assert_eq!(36, damerau_levenshtein(a, b));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_beginning_transposition() {
+    //     assert_eq!(1, damerau_levenshtein("foobar", "ofobar"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_end_transposition() {
+    //     assert_eq!(1, damerau_levenshtein("specter", "spectre"));
+    // }
+
+    // #[bench]
+    // fn damerau_levenshtein_unrestricted_edit() {
+    //     assert_eq!(3, damerau_levenshtein("a cat", "an abct"));
+    // }
 }
