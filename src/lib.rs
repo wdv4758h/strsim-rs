@@ -62,7 +62,7 @@ pub fn jaro(a: &str, b: &str) -> f64 {
     let mut transpositions = 0;
     let mut b_match_index = 0;
 
-    for (i, a_char) in a.chars().enumerate() {
+    a.chars().enumerate().for_each(|(i, a_char)| {
         // prevent integer wrapping
         let min_bound = if i > search_range { i - search_range } else { 0 };
         let max_bound = i + search_range;
@@ -79,7 +79,7 @@ pub fn jaro(a: &str, b: &str) -> f64 {
             }
             b_match_index = j;
         }
-    }
+    });
 
     if matches == 0 {
         0.0
