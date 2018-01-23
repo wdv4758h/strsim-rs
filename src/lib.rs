@@ -61,9 +61,9 @@ pub fn jaro(a: &str, b: &str) -> f64 {
     let search_range = (max(a_len, b_len) / 2) - 1;
 
     let mut b_consumed = vec![false; b_len];
-    let mut matches = 0;
+    let mut matches = 0.0;
 
-    let mut transpositions = 0;
+    let mut transpositions = 0.0;
     let mut b_match_index = 0;
 
     a.chars().enumerate().for_each(|(i, a_char)| {
@@ -76,20 +76,18 @@ pub fn jaro(a: &str, b: &str) -> f64 {
                               .next();
         if let Some((j, _)) = result {
             b_consumed[j] = true;
-            matches += 1;
+            matches += 1.0;
 
             if j < b_match_index {
-                transpositions += 1;
+                transpositions += 1.0;
             }
             b_match_index = j;
         }
     });
 
-    if matches == 0 {
+    if matches == 0.0 {
         0.0
     } else {
-        let matches = matches as f64;
-        let transpositions = transpositions as f64;
         let a_len = a_len as f64;
         let b_len = b_len as f64;
         ((matches / a_len) +
